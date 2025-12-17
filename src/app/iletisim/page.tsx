@@ -133,7 +133,7 @@ export default function ContactPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-slate-200 mb-1">
-                      Telefon (Opsiyonel)
+                      Telefon (Zorunlu)
                     </label>
                     <input
                       type="tel"

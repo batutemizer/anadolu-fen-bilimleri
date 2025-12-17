@@ -88,6 +88,10 @@ export default function AdminPanelPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [featuredStudents, setFeaturedStudents] = useState<FeaturedStudent[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  // Diğer state'lerin yanına ekle (searchTerm'den sonra):
+
+const [currentPage, setCurrentPage] = useState(1); // BU SATIRI EKLE
+const itemsPerPage = 6; // BU SATIRI EKLE (sayfa başına 12 kart)
 
   // İlk render'da oturum kontrolü
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
@@ -597,6 +601,10 @@ export default function AdminPanelPage() {
      student.id.includes(searchTerm))
   );
 
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+const startIndex = (currentPage - 1) * itemsPerPage;
+const currentStudents = filteredStudents.slice(startIndex, startIndex + itemsPerPage);
+
   if (isAuthorized === null) {
     // Yetki kontrolü yapılıyor
     return (
@@ -893,96 +901,193 @@ export default function AdminPanelPage() {
         </section>
 
         {/* Öğrenci Listesi */}
-        <section className="rounded-3xl border border-slate-800/80 bg-slate-900/70 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">
-              Öğrenci Listesi
-            </h2>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Öğrenci ara..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="rounded-full border border-slate-700/80 bg-slate-950/60 px-4 py-1.5 text-sm text-slate-50 outline-none ring-alf-gold/40 transition focus:border-alf-gold/70 focus:ring-2 w-48"
+        {/* Öğrenci Listesi - Card View with Pagination */}
+<section className="rounded-3xl border border-slate-800/80 bg-slate-900/70 p-5">
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">
+      Öğrenci Listesi ({filteredStudents.length} öğrenci) - Sayfa {currentPage}/{totalPages}
+    </h2>
+    <div className="flex items-center gap-3">
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Öğrenci ara..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1); // Arama yapınca 1. sayfaya dön
+          }}
+          className="rounded-full border border-slate-700/80 bg-slate-950/60 px-4 py-1.5 text-sm text-slate-50 outline-none ring-alf-gold/40 transition focus:border-alf-gold/70 focus:ring-2 w-48"
+        />
+      </div>
+      <span className="text-xs text-slate-400">
+        {students.filter(s => 
+          payments.filter(p => p.student_id === s.id).length < (s.installment_count || 0)
+        ).length} ödenmemiş borç var
+      </span>
+    </div>
+  </div>
+  
+  {/* Kart Grid - SADECE GÖSTERİLEN ÖĞRENCİLER */}
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+    {currentStudents.map((student) => {
+      const studentPayments = payments.filter(p => p.student_id === student.id);
+      const totalPaid = studentPayments.reduce((sum, p) => sum + (p.paid_amount || 0), 0);
+      const remainingDebt = Math.max((student.total_payment_amount || 0) - totalPaid, 0);
+      const remainingInstallments = Math.max((student.installment_count || 0) - studentPayments.length, 0);
+      const progress = student.total_payment_amount ? 
+        Math.round((totalPaid / student.total_payment_amount) * 100) : 0;
+
+      return (
+        <div 
+          key={student.id}
+          className="rounded-2xl border border-slate-800/80 bg-slate-950/60 p-4 hover:border-alf-gold/40 transition-colors"
+        >
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <h3 className="font-semibold text-slate-50 truncate">
+                {student.full_name || student.name || "İsimsiz"}
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                ID: {student.student_unique_id}
+              </p>
+            </div>
+            <button
+              onClick={() => router.push(`/admin-panel/student-details?id=${student.id}`)}
+              className="rounded-full border border-alf-gold/60 bg-alf-gold/5 px-3 py-1 text-xs font-semibold text-alf-gold shadow-sm transition hover:bg-alf-gold/15"
+            >
+              Detay
+            </button>
+          </div>
+          
+          {/* Progress bar */}
+          <div className="mb-3">
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-slate-300">Ödeme Durumu</span>
+              <span className={`font-medium ${progress === 100 ? 'text-green-400' : 'text-alf-gold'}`}>
+                %{progress}
+              </span>
+            </div>
+            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${progress === 100 ? 'bg-green-500' : 'bg-alf-gold'}`}
+                style={{ width: `${progress}%` }}
               />
             </div>
           </div>
-          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-800/80">
-            <table className="min-w-full divide-y divide-slate-800 text-sm">
-              <thead className="bg-slate-950/70 text-xs uppercase tracking-[0.16em] text-slate-400">
-                <tr>
-                  <th className="px-3 py-2 text-left">Öğrenci Adı</th>
-                  <th className="px-3 py-2 text-left">Toplam Ücret</th>
-                  <th className="px-3 py-2 text-left">Toplam Ödenen</th>
-                  <th className="px-3 py-2 text-left">Kalan Borç</th>
-                  <th className="px-3 py-2 text-left">Kalan Taksit</th>
-                  <th className="px-3 py-2 text-left">İşlemler</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/80 bg-slate-950/40">
-                {filteredStudents.map((student) => {
-                  // Öğrenciye ait ödemeleri filtrele
-                  const studentPayments = payments.filter(
-                    (p) => p.student_id === student.id
-                  );
-                  
-                  // Toplam ödenen miktarı hesapla
-                  const totalPaid = studentPayments.reduce(
-                    (sum, payment) => sum + (payment.paid_amount || 0),
-                    0
-                  );
-                  
-                  // Kalan borç (NaN olmaması için kontrol)
-                  const remainingDebt = Math.max(
-                    (student.total_payment_amount || 0) - totalPaid,
-                    0
-                  );
-                  
-                  // Kalan taksit sayısı
-                  const remainingInstallments = Math.max(
-                    (student.installment_count || 0) - studentPayments.length,
-                    0
-                  );
-
-                  return (
-                    <tr key={student.id} className="hover:bg-slate-900/60">
-                      <td className="px-3 py-2 text-slate-100">
-                        {student.full_name || student.name || "İsimsiz"}
-                      </td>
-                      <td className="px-3 py-2 text-alf-gold">
-                        {student.total_payment_amount ? `${(student.total_payment_amount || 0).toLocaleString("tr-TR")} TL` : "-"}
-                      </td>
-                      <td className="px-3 py-2 text-green-400">
-                        {totalPaid > 0 ? `${totalPaid.toLocaleString("tr-TR")} TL` : "0 TL"}
-                      </td>
-                      <td className="px-3 py-2 text-red-400">
-                        {remainingDebt > 0 ? `${remainingDebt.toLocaleString("tr-TR")} TL` : "0 TL"}
-                      </td>
-                      <td className="px-3 py-2 text-slate-300">
-                        {remainingInstallments}
-                      </td>
-                      <td className="px-3 py-2">
-                        <button
-                          onClick={() => router.push(`/admin-panel/student-details?id=${student.id}`)}
-                          className="rounded-full border border-alf-gold/60 bg-alf-gold/5 px-3 py-1 text-xs font-semibold text-alf-gold shadow-sm transition hover:bg-alf-gold/15"
-                        >
-                          Detay
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {filteredStudents.length === 0 && (
-              <div className="text-center py-8 text-slate-400">
-                {searchTerm ? "Arama kriterlerinize uygun öğrenci bulunamadı." : "Henüz hiç öğrenci eklenmemiş."}
-              </div>
-            )}
+          
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-xs text-slate-400">Toplam Ücret</p>
+              <p className="text-slate-50 font-medium">
+                {student.total_payment_amount ? `${(student.total_payment_amount || 0).toLocaleString("tr-TR")} TL` : "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">Ödenen</p>
+              <p className={`font-medium ${totalPaid > 0 ? 'text-green-400' : 'text-slate-300'}`}>
+                {totalPaid.toLocaleString("tr-TR")} TL
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">Kalan Borç</p>
+              <p className={`font-medium ${remainingDebt > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                {remainingDebt > 0 ? `${remainingDebt.toLocaleString("tr-TR")} TL` : "Yok"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">Taksitler</p>
+              <p className="text-slate-50 font-medium">
+                <span className={remainingInstallments > 0 ? 'text-amber-400' : 'text-green-400'}>
+                  {remainingInstallments} kalan
+                </span>
+              </p>
+            </div>
           </div>
-        </section>
-
+          
+          {/* Quick payment button */}
+          {remainingInstallments > 0 && (
+            <button
+              onClick={() => {
+                setPaymentForm({
+                  student_id: student.id,
+                  installment_no: "",
+                  paid_amount: ""
+                });
+                // Scroll to payment form
+                document.getElementById('payment-form')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="w-full mt-3 rounded-xl bg-slate-800/50 border border-slate-700 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-slate-50 transition"
+            >
+              Hızlı Ödeme Ekle
+            </button>
+          )}
+        </div>
+      );
+    })}
+    
+    {currentStudents.length === 0 && (
+      <div className="col-span-full text-center py-8 text-slate-400">
+        {searchTerm ? "Arama kriterlerinize uygun öğrenci bulunamadı." : "Henüz hiç öğrenci eklenmemiş."}
+      </div>
+    )}
+  </div>
+  
+  {/* PAGINATION KONTROLLERİ */}
+  {totalPages > 1 && (
+    <div className="flex flex-wrap justify-center items-center gap-2 mt-6 pt-4 border-t border-slate-800/80">
+      <button
+        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+        disabled={currentPage === 1}
+        className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/50 text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+      >
+        ← Önceki
+      </button>
+      
+      {/* Sayfa numaraları */}
+      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+        let pageNum;
+        if (totalPages <= 5) {
+          pageNum = i + 1;
+        } else if (currentPage <= 3) {
+          pageNum = i + 1;
+        } else if (currentPage >= totalPages - 2) {
+          pageNum = totalPages - 4 + i;
+        } else {
+          pageNum = currentPage - 2 + i;
+        }
+        
+        return (
+          <button
+            key={pageNum}
+            onClick={() => setCurrentPage(pageNum)}
+            className={`px-3 py-1.5 rounded-lg text-sm transition ${
+              currentPage === pageNum
+                ? 'bg-alf-gold text-alf-navy font-bold border border-alf-gold'
+                : 'border border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+            }`}
+          >
+            {pageNum}
+          </button>
+        );
+      })}
+      
+      <button
+        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+        disabled={currentPage === totalPages}
+        className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900/50 text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+      >
+        Sonraki →
+      </button>
+      
+      {/* Sayfa bilgisi */}
+      <div className="text-xs text-slate-400 ml-4">
+        Gösterilen: {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredStudents.length)} / {filteredStudents.length} öğrenci
+        <span className="block text-[10px] text-slate-500">Sayfa başına: {itemsPerPage} öğrenci</span>
+      </div>
+    </div>
+  )}
+</section>
         {/* Öne Çıkan Öğrenciler */}
         <section className="rounded-3xl border border-slate-800/80 bg-slate-900/70 p-5">
           <h2 className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">

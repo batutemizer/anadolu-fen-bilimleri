@@ -196,7 +196,7 @@ export default async function Home() {
                     <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
                       İletişim
                     </p>
-                    <p className="text-sm font-medium text-white">0XXX XXX XX XX</p>
+                    <p className="text-sm font-medium text-white">0(424)502 4840</p>
                     <p className="text-xs text-slate-400 mt-1">info@alfkurs.com</p>
                   </div>
                   <div className="rounded-2xl border border-slate-800/80 bg-slate-950/60 p-4 backdrop-blur-sm hover:border-yellow-500/30 transition-colors">
