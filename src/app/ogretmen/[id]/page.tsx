@@ -1,3 +1,6 @@
+// 1. Build hatasını önlemek için sayfayı dinamik yapıyoruz
+export const dynamic = "force-dynamic";
+
 import { supabase } from "@/lib/supabaseClient";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -33,8 +36,14 @@ async function getTeacher(id: string) {
   return data;
 }
 
-export default async function OgretmenDetayPage({ params }: { params: { id: string } }) {
-  const teacher = await getTeacher(params.id);
+// 2. Next.js 15'te params bir Promise'dir, bu yüzden await ile almalıyız
+export default async function OgretmenDetayPage({ 
+  params 
+}: { 
+  params: Promise<{ id: string }> 
+}) {
+  const resolvedParams = await params;
+  const teacher = await getTeacher(resolvedParams.id);
 
   if (!teacher) {
     notFound();
