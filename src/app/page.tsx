@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import Link from "next/link";
 import Image from "next/image";
 import { Navbar } from "@/components/Navbar";
@@ -22,6 +25,8 @@ async function getAnnouncements() {
     .select("*")
     .order("created_at", { ascending: false });
 
+  console.log("ANNOUNCEMENTS:", { error, count: data?.length });
+
   if (error) {
     console.error("Duyurular alınırken hata:", error);
     return [];
@@ -29,6 +34,7 @@ async function getAnnouncements() {
 
   return data ?? [];
 }
+
 
 async function getFeaturedStudents() {
   const { data, error } = await supabase
