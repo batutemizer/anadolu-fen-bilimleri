@@ -7,6 +7,8 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/lib/supabaseClient";
 import { GalleryHero } from "@/components/GalleryHero";
+import WhatsAppButton from "@/components/WhatsAppButton";
+
 
 type FeaturedStudent = {
   id: string;
@@ -388,6 +390,7 @@ export default async function Home() {
       </main>
       
       <Footer />
+       <WhatsAppButton />
     </>
   );
 }
