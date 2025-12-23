@@ -16,7 +16,7 @@ export function Footer() {
             Kurumsal Eğitim • Birebir Takip
           </span>
           <span className="text-slate-500">
-            © {new Date().getFullYear()} SoftNix. Tüm hakları
+            © {new Date().getFullYear()} TEMIZER. Tüm hakları
             saklıdır.
           </span>
         </div>
